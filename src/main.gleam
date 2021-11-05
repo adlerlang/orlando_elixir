@@ -1,11 +1,13 @@
 //Rules
 // Modules are created by file name. example.gleam -> example.erl and folder/example.erl -> folder@example.erl the names are also the external
-// calls folder@example:hello() -> hello function in the module. 
+// calls folder@example:hello() -> hello function in the module.
 // We are skipping the Elixir layer and going straight to Erlang when compiled
-// Familar syntax though we are using Rust. Though there are some different and added methods. 
+// Familar syntax though we are using Rust. Though there are some different and added methods.
 // There is no map literal syntax in Gleam, and you cannot pattern match on a map. Maps are generally not used much in Gleam.
-// Atoms are rarely used. In fact after 0.16 version 0.17 doesn't include the Atom libary. This will break the gleam/otp library
-// which is experimental to begin with. 
+// Atoms package was after 0.16 version 0.17 doesn't include the Atom libary. This will break the gleam/otp library
+// which is experimental to begin with.
+// This talk will be based only on the Gleam standard library
+// http server and otp is currently experimental and with version changes expect things breaking like mentioned above
 import gleam/io
 import gleam/string
 import gleam/string_builder
@@ -28,13 +30,9 @@ pub type ListStringInt =
 pub type MapStringInt =
   Map(String, Int)
 
-pub type Details {
-  Names(List(String))
-  Date(String)
-}
-
 pub type Meetup {
-  Meetup(List(Details))
+  Meetup(title: String, names: List(String), date: String)
+  RecordValueReturn(Meetup, List(String))
 }
 
 pub type MapExample {
@@ -62,12 +60,15 @@ pub type Basics {
   MyFirstList(List(Int))
   MyFirstTuple(#(String, Int))
   MyFirstMap(Map(String, Int))
-  MapResult(Result(Int, Nil))
+  MapResult(String, Result(Int, Nil))
   IsNil(Nil)
 }
 
-pub fn meetup(names: List(String), date: String) {
-  let meetup_data: List(Meetup) = [Meetup([Names(names), Date(date)])]
+pub fn meetup(title: String, names: List(String), date: String) {
+  let data: Meetup = Meetup(title: title, names: names, date: date)
+  let Meetup(t, n, d) = data
+
+  RecordValueReturn(data, ["I only return title:", t])
 }
 
 pub fn basics() {
@@ -82,7 +83,6 @@ pub fn basics() {
   // Lists can only be generated this way from proplists (Lists of Tuples) [#()]
   let my_first_map: Map(String, Int) = map.from_list([#("key", 1)])
 
-  // Indexing isn't what you expect. You get back a tuple of ok or error because Erlang doesn't handle nils. 
   let map_indexing_ok =
     my_first_map
     |> map.insert("new_key", 2)
@@ -100,14 +100,17 @@ pub fn basics() {
     MyFirstList(my_first_list),
     MyFirstTuple(my_first_tuple),
     MyFirstMap(my_first_map),
-    MapResult(map_indexing_ok),
-    MapResult(map_indexing_error),
+    MapResult("is ok", map_indexing_ok),
+    MapResult(
+      "This is returned because Erlang will not handle nil like Elixir does",
+      map_indexing_error,
+    ),
   ]
 }
 
 pub fn map_example() {
   // maps are generated 2 ways new and actual creation of the map as usual in Elixir
-  // How to Write Atoms they are just declared as types. The type system is all about them 
+  // How to Write Atoms they are just declared as types. The type system is all about them
   let atom = MyAtom
 
   // piping as normal in Elixir

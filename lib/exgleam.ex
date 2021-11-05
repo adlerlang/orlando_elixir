@@ -4,9 +4,11 @@ alias :main, as: Main
 
 
 def meetup() do
-  names = ["mike", "laura"]
+  names = ["Joe", "Kaylee", "and so on..."]
   data = "Nov 10, 2021"
-  Main.meetup(names, data)
+  title= "Beginners thinking on Gleam"
+
+  Main.meetup(title, names, data)
 
 end
 
