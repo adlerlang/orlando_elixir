@@ -1,3 +1,14 @@
+//Questions
+// 1. Using Gleam as a webserver. Gleam has an Elli webserver. It is experimental so expect breaking
+//    as Gleam Standard Library changes and if you are using Elixir, the Mix Compile library might
+//    cause you some issues. You can call Elixir/Erlang libraries like Cowboy, but in conjuction,
+//    it will be your preference in design. 
+// 2. Calling Gleam from Elixir. That is what is happening here but not special going on the Elixir side. 
+//    As I would have to cover three different code bases. We just use alias :main, as: Main.
+//    Gleam is just a higher level langauge that compiles to Erlang. 
+// These are some of the most used libraries included in the stdlib.
+// We import gleam/map ... We import a type as gleam/map.{Map} ...
+// We import another gleam file as import gleamfile and we alias with as
 import gleam/io
 import gleam/string
 import gleam/string_builder
@@ -5,44 +16,77 @@ import gleam/int
 import gleam/bit_string
 import gleam/map.{Map}
 import gleam/list
-import gleam/iterator as iter
+import gleam/iterator.{Iterator} as iter
 import gleam/dynamic
 import gleam/option.{Option}
 import gleam/queue.{Queue}
 import gleam/dynamic.{Dynamic}
-import gleam/should
 import gleam/result
 
-pub fn a_string() {
+// 1.  There is no need for module naming. The file name generates the module name automatically.
+//     This file name is main.gleam and it compiles to main.erl
+//     If it was in a directory say json/main.gleam the module name becomes json@main.erl    
+//      Calling if from Elixir is the same as calling a Erlang based module
+//      alias :main, as: Main for example now I can call Main.function in Elixir fashion.
+// 2.  Atoms package has been drop as of recent version, and so, 
+//     I will not be talking about concurrency in general as OTP in gleam at this beginner talk. 
+//     As I mentioned above the Atom package is removed but is needed for OTP library as a dependency.
+//     Expect things to break at times wth version changes until Gleam 1... something. 
+// 3.  There are different ways libraries work between languages on the beam. If you do Erlang
+//     you will know about thesse differences already. I am going to keep this talk related to Elixir. 
+//--------------------------------------------------------------------------------------------------------
+// pub is public and without is private
+// functions and variables are usually lowercase and undercased.
+pub fn a_string() -> String {
   "hi"
 }
 
 pub type Atom {
-  // will be :plainatom
+  // will be :plainatom (notice that P is captialized only )
   Plainatom
-  // pascal case atoms turn to :the_atom 
+  // pascal case atoms turn to :the_atom (notice both P and A are capitalized)
   PascalAtom
+
+
+  CustomTuple(#(String, String))
+
 
   // {:is_string, "string"}
   IsString(String)
+
+  // A record which will be a tuple of {:person, "joe", 8 } 
+  Person(name: String, age: Int)
 }
 
+//
 pub fn atom() -> List(Atom) {
   let plain_atom: Atom = Plainatom
   let pascal_atom: Atom = PascalAtom
   let is_string: Atom = IsString("is a string")
+  let my_tuple: Atom = CustomTuple(#("hi", "mike"))
+  let CustomTuple(#(hi, mike)) = my_tuple
+
   let IsString(get_string) = is_string
   io.debug(get_string)
 
   [plain_atom, pascal_atom, is_string]
 }
 
-pub fn is_string(string_value: String) -> Result(String, String) {
-  dynamic.string(dynamic.from(string_value))
+// We know bools are atoms
+pub fn bool() -> List(Bool) {
+  [True, False]
 }
 
-pub fn is_string_also(string_value: String) -> Result(List(Dynamic), String) {
-  dynamic.list(dynamic.from(string_value))
+// We also know nil is also atom 
+pub fn nil() -> Nil {
+  Nil
+}
+
+// dynamic is used to guard against unexpected parameter types from the outside world
+// (Int instead of string, etc) 
+pub fn is_string(string_value: String) -> Result(String, String) {
+  dynamic.string(dynamic.from(string_value))
+  // {:ok, is a string} or {:error, is a int not string}
 }
 
 //globals with const
@@ -52,15 +96,34 @@ pub fn global() -> Int {
   global_value + 1
 }
 
-pub fn a_float() -> Float {
-  1.00 +. 0.25
+pub fn a_float() -> List(Float) {
   //adding floats requires a period after the operator
-  1.00 -. 0.25
+  [1.00 -. 0.25, 1.00 +. 0.25]
 }
 
+pub type ListExamples {
+
+  First(Int)
+  Second(Int)
+  Rest(List(Int))
+}
+
+pub fn list() -> List(ListExamples) {
+  let mylist: List(Int) = [1, 2, 3, 4, 5, 6]
+  let [first, second, ..rest] = mylist
+  [First(first), Second(second), Rest(rest)]
+}
+
+// Will not compile
+// pub fn list_any() -> List(a) {
+//   ["hi", 1, 3, 4, 5]
+// }
 pub fn tuples() -> #(String, Int) {
   #("one", 1)
 }
+
+
+
 
 pub fn maps() -> Map(String, Int) {
   let new_map =
@@ -74,9 +137,48 @@ pub fn maps() -> Map(String, Int) {
   final_map
 }
 
-pub fn map_no_key() {
+pub fn map_no_key() -> Result(Int, Nil) {
   let my_map: Map(String, Int) = maps()
   map.get(my_map, "million")
+}
+
+
+// pattern matching 
+pub fn pattern_matching() -> #(#(Int, String), #(Int, List(Int))) {
+  let [head, ..tail]: List(Int) = [1, 2, 3, 4, 5]
+  let #(a, b): #(String, Int) = #("one", 1)
+      
+  //there is no map literal syntax in Gleam, and you cannot pattern match on a map. Maps are generally not used much in Gleam
+  #(#(b, a), #(head, tail))
+}
+
+
+// will not compile
+// pub fn maps_any() -> Map(String, Int) {
+//   let my_map =
+//     map.new()
+//     |> map.insert("one", 1)
+//   let my_map =
+//     map.new()
+//     |> map.insert(2, "two")
+// }
+
+//                                  {:ok, "value"} {:error, "error"}
+// pub fn results() -> Result(String, String) {
+//   dynamic.string(dynamic.from(value))
+//  //   Error()
+
+// }
+                                    //  option.s
+pub fn options(value: String) -> Option(String) {
+  let is_string = dynamic.string(dynamic.from(value))
+  case result.is_ok(is_string) {
+    True -> {
+      let Ok(get_string) = is_string
+      option.Some(get_string)
+    }
+    False -> option.None
+  }
 }
 
 // After compiled to Erlang, parameters of course aren't 
@@ -86,12 +188,22 @@ pub fn check_int(value: Int) -> Result(Int, String) {
   dynamic.int(dynamic.from(value))
 }
 
-pub fn result_to_option() {
-  option.from_result(check_int(3))
+pub fn dynamic_list(mylist: List(String)) {
+  // dynamic.list(dynamic.from(mylist))
+  iter.from_list(mylist)
+  |> iter.map
+  (fn(value) {
+    let dynamic_string: Result(String, String) =
+      dynamic.string(dynamic.from(value))
+    let dynamic_to_some = option.from_result(dynamic_string)
+    option.unwrap(option.Some(dynamic_to_some), option.None)
+  })
+  |> iter.to_list
+  |> option.values
 }
 
-pub fn lambda() -> fn(Int) -> Int {
-  let my_first_lambda: fn(Int) -> Int = fn(x) { x + x }
+pub fn lambda() -> Int {
+  let my_first_lambda: Int = fn(x) { x + x }(3)
   my_first_lambda
 }
 
@@ -99,30 +211,39 @@ pub fn lambda() -> fn(Int) -> Int {
 // custom types are created by inject a type into them. like Example(Int)<- this produces a tuple {:example, 3}
 // - record(meetup, {title, names, date}) 
 // Elixir usually is 
+
+
+
 //  defmethod Meetup do
 //defstruct [:title, :names, :date]
-pub type Meetup {
+
+
+pub type FirstMeet {
   Meetup(title: String, names: List(String), date: String)
-  RecordValueReturn(Meetup, List(String))
+//-record(meetup, {title, names, date})
+       //  {meetup, title, names, date}
+         {meetup, "elixirgroup", ["mike"], "Nov-10th"}
+
+
+  Title(String)
 }
+
+//calling an Erlang or Elixir library in gleam
+pub external fn to_json(List(Meetup)) -> Meetup =
+  "jsx" "encode"
 
 pub fn meetup(title: String, names: List(String), date: String) {
-  let data: Meetup = Meetup(title: title, names: names, date: date)
+  let data: FirstMeet = Meetup(title: title, names: names, date: date)
 
   // %{title: t, names: n, date: d } = %Meetup{} pattern matching
-  let Meetup(t, _n, _d) = data
+  
+    
+  let Meetup(t , _n, _d) = data
+  let Meetup(title, names, date) = {:meetup, title, names, date}
 
-  [RecordValueReturn(data, ["I only return title:", t]), to_json([#(Title, t)])]
+  [data, Title(t), to_json([Title(t)])]
 }
 
-// pattern matching 
-pub fn pattern_matching() -> #(#(Int, String), #(Int, List(Int))) {
-  let [head, ..tail]: List(Int) = [1, 2, 3, 4, 5]
-  let #(a, b): #(String, Int) = #("one", 1)
-
-  //there is no map literal syntax in Gleam, and you cannot pattern match on a map. Maps are generally not used much in Gleam
-  #(#(b, a), #(head, tail))
-}
 
 // error handling pattern match
 pub fn error_handling() -> Result(Int, String) {
@@ -151,149 +272,9 @@ pub fn iterate() -> List(Int) {
   |> option.values
 }
 
-pub fn types_in_action(value: Int) -> Result(Int, String) {
-  // we use dynamic because once the code is compiled. Elixir is dynamic so we are insuring what comes
-  // from it is indeed an int. 
-  let result = dynamic.int(dynamic.from(value))
 
-  //
-  case result {
-    Ok(return) -> Ok(return)
-    Error(error) ->
-      Error(string.append("Is not an int with the following error: ", error))
-  }
-  // this will result in an automatic error if not ok. Just like {:ok, 3} = {:ok, 4}
-  // but unlike Elixir it isn't an Match error but a
-  //** (ErlangError) Erlang error: %{function: "types_in_action", gleam_error: :assert, line: 130, message:
-  // "Assertion pattern match failed", module: "main", value: {:error, "Expected an int, got a binary"}}
-  // assert Ok(value) = result
-}
 
-// PropList of String,Int [{:one, 1}, {:two,2}] this is a type alias
-pub type ListStringInt =
-  List(#(String, Int))
 
-// Map of String, Int %{"one"=> 1}
-pub type MapStringInt =
-  Map(String, Int)
 
-pub type MapExample {
-  MyAtom
-  MapNew(MapStringInt)
-  MapGenerated(MapStringInt)
-  PropListBeforeMap(ListStringInt)
-  ListFromMap
-  MapIterator
-  KeyNotInMap(Nil)
-}
 
-pub type ListExample {
-  PatternMatchList(List(#(String, Int)))
-  PatternMatchResults(String)
-  ListIterator(ListStringInt)
-  Head(#(String, Int))
-  Tail(ListStringInt)
-}
 
-pub type Basics {
-  Title
-  First
-  MyFirstAtom
-  MyFirstString(String)
-  MyFirstList(List(Int))
-  MyFirstTuple(#(String, Int))
-  MyFirstMap(Map(String, Int))
-
-  MapResult(String, Result(Int, Nil))
-  IsNil(Nil)
-}
-
-//starting writing functions. For now, I avoided placing a return type.
-// A return type is exactly how Rust, Swift, and maybe others do it. 
-//          (without private)
-// Example  (marked public)  (function)  (name of function)       (return type)
-//          pub              fn          example(a: List(Int))     -> List(Int)
-pub external fn to_json(List(#(Basics, String))) -> a =
-  "jsx" "encode"
-
-pub fn basics() {
-  let first_atom: Basics = First
-  let atom_underlined: Basics = MyFirstAtom
-  let mynil: Nil = Nil
-  let my_first_string: String = "hello"
-  let my_first_list: List(Int) = [1, 2, 3, 4]
-  let my_first_tuple: #(String, Int) = #("welcome", 1)
-
-  // Lists can only be generated this way from proplists (Lists of Tuples) [#()]
-  let my_first_map: Map(String, Int) = map.from_list([#("key", 1)])
-
-  let map_indexing_ok =
-    my_first_map
-    |> map.insert("new_key", 2)
-    |> map.get("new_key")
-
-  let map_indexing_error =
-    my_first_map
-    |> map.get("not_a_key")
-
-  [
-    first_atom,
-    atom_underlined,
-    IsNil(mynil),
-    MyFirstString(my_first_string),
-    MyFirstList(my_first_list),
-    MyFirstTuple(my_first_tuple),
-    MyFirstMap(my_first_map),
-    MapResult("is ok", map_indexing_ok),
-    MapResult(
-      "This is returned because Erlang will not handle nil like Elixir does",
-      map_indexing_error,
-    ),
-  ]
-}
-
-pub fn map_example() {
-  // maps are generated 2 ways new and actual creation of the map as usual in Elixir
-  // How to Write Atoms they are just declared as types. The type system is all about them
-  let atom = MyAtom
-
-  // piping as normal in Elixir
-  let new_map: MapStringInt =
-    map.new()
-    |> map.insert("inserted_key", 1)
-  let new_map: MapExample = MapNew(new_map)
-
-  // to generate a map in gleam the original type must be a proplist List(#()) List of tuples
-  // tuples are generated by syntax #("key", 1) {:key, 1} or {key, 1}
-  let prop_list: MapExample = PropListBeforeMap([#("key", 1)])
-  let PropListBeforeMap(get_prop_list) = prop_list
-
-  let list_to_map: MapStringInt = map.from_list(get_prop_list)
-  let create_map: MapExample = MapGenerated(list_to_map)
-
-  [atom, prop_list, new_map, create_map]
-}
-
-pub fn list_example() {
-  let mylist: ListExample = PatternMatchList([#("key", 1)])
-  let PatternMatchList([#(key, value)]) = mylist
-
-  let iter_list: ListStringInt = [#("a", 1), #("b", 2)]
-  let iteration =
-    iter.from_list(iter_list)
-    |> iter.map(fn(value) {
-      let #(letter, number) = value
-      let letter =
-        letter
-        |> string.uppercase
-      let number = number + 1
-      #(letter, number)
-    })
-    |> iter.to_list
-
-  let [head, ..tail] = iter_list
-
-  let m = string.append(key, int.to_string(value))
-
-  [ListIterator(iteration), Head(head), Tail(tail), PatternMatchResults(m)]
-}

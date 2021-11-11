@@ -1,6 +1,17 @@
 defmodule Exgleam do
-alias :json_handler@core, as: Json
 alias :main, as: Main
+# while you can add subdirectory modules to Elixir,
+# It would be probably better to import via Gleam.
+alias :json_handler@core, as: Json
+
+
+
+def atom() do
+Main.atom
+end
+
+
+
 
 
 def meetup() do
@@ -12,21 +23,32 @@ def meetup() do
 
 end
 
-def basics do
-  Main.basics()
+def maps() do
+  Main.maps()
 end
 
-def map_example() do
-  Main.map_example()
+def tuples() do
+  Main.tuples
 end
 
-def list_example() do
-  Main.list_example()
+def pattern_matching() do
+  Main.pattern_matching()
+end
+
+def error_handling() do
+  Main.error_handling
+end
+
+def iterate() do
+  Main.iterate()
 end
 
 
 
 
+
+
+def a_string(),do: Main.a_string()
 
 
 
@@ -46,5 +68,14 @@ end
       :jsx.decode(value)
      end
 
+
+
+     def options(value), do: Main.options(value)
+
+     def is_string(value), do: Main.is_string(value)
+
+     def check_int(value), do: Main.check_int(value)
+
+     def dynamic_list(value), do: Main.dynamic_list(value)
 
 end

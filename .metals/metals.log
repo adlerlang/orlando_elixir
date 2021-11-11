@@ -1,0 +1,5 @@
+[0m2021.11.05 22:03:26 INFO  Started: Metals version 0.10.9 in workspace '/home/protomikex/gleam/exgleam' for client Visual Studio Code 1.62.0.[0m
+[0m2021.11.05 22:03:30 INFO  time: initialize in 4.01s[0m
+[0m2021.11.05 22:03:31 WARN  Build server is not auto-connectable.[0m
+[0m2021.11.05 22:03:31 WARN  no build tool detected in workspace '/home/protomikex/gleam/exgleam'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. [0m
+[0m2021.11.05 22:27:18 INFO  shutting down Metals[0m
