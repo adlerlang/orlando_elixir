@@ -26,3 +26,6 @@ gen
 .vscode
 .metals
 _build
+.clj
+erl_crash.dump
+rebar.lock
